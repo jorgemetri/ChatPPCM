@@ -2,4 +2,7 @@ streamlit
 langchain
 faiss-cpu
 openai
-git+https://github.com/hwchase17/langchain-community.git
+langchain-community
+langchain-openai
+faiss-cpu
+openai
