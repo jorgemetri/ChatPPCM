@@ -13,7 +13,6 @@ def show_logo(url):
     st.image(url, width=200)
 
 LOGO_URL_LARGE = "images/samarco.png"  # Substitua pelo caminho correto da sua logo
-show_logo(LOGO_URL_LARGE)
 
 # Inicializa o estado de sessão
 if "logged_in" not in st.session_state:
@@ -26,13 +25,15 @@ def logout():
     st.rerun()
 
 if st.session_state["logged_in"]:
-    # Sidebar com botão de logout
+    # Sidebar com logo e botão de logout
     with st.sidebar:
+        show_logo(LOGO_URL_LARGE)  # Logo na sidebar
+        st.write("")  # Espaçamento
         if st.button("Sair"):
             logout()
 
     # Navegação e páginas
-    oraculo = st.Page("chatppcm/chat.py", title="Oráculo", icon="🤖")  # Ícone alterado
+    oraculo = st.Page("chatppcm/chat.py", title="Oráculo", icon="🤖")
     mes = st.Page("agentemes/mes.py", title="MES", icon=":material/swap_horiz:")
     extrator = st.Page("extrator/main.py", title="Extrator", icon=":material/search:")
     dash = st.Page("dash/dash.py", title="Dash Notas", icon=":material/list:")
@@ -46,7 +47,7 @@ if st.session_state["logged_in"]:
     pg.run()
 
 else:
-    # Esconde a sidebar na tela de login
+    # Esconde a sidebar e exibe logo na tela de login
     st.markdown("""
         <style>
             section[data-testid="stSidebar"] {
@@ -54,7 +55,10 @@ else:
             }
         </style>
     """, unsafe_allow_html=True)
-
+    
+    # Exibe logo na tela principal de login
+    show_logo(LOGO_URL_LARGE)
+    
     # Tela de login
     st.title("Login")
     username = st.text_input("Usuário")
