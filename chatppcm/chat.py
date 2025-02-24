@@ -8,50 +8,39 @@ from langchain.memory import ConversationBufferMemory
 from langchain.prompts import PromptTemplate
 from chatppcm import rag
 
-# Função para carregar ou criar o vector store usando FAISS
 def load_vectorstore():
     persist_directory = 'ppcm/base'
     embedding = OpenAIEmbeddings(openai_api_key=st.secrets["OPENAI_API_KEY"])
     
-    if os.path.exists(persist_directory) and os.listdir(persist_directory):
+    if os.path.exists(persist_directory):
         vectordb = FAISS.load_local(
             persist_directory,
             embedding,
             allow_dangerous_deserialization=True
         )
     else:
-        st.write("Criando novo vector store...")
         chunks = rag.PrepararBaseDados()
         vectordb = FAISS.from_documents(chunks, embedding)
         vectordb.save_local(persist_directory)
     return vectordb
 
-# Função para criar a cadeia de QA com histórico e prompt aprimorado, utilizando retriever base (sem compressão)
 def create_qa_chain(vectordb, memory):
-    # Inicializa o LLM
-    llm = ChatOpenAI(model="gpt-4", openai_api_key=st.secrets["OPENAI_API_KEY"])
+    llm = ChatOpenAI(model="gpt-4", temperature=0.3, openai_api_key=st.secrets["OPENAI_API_KEY"])
     
-    # Cria o retriever base usando mmr com k=5 e lambda_mult=0.5
     retriever = vectordb.as_retriever(
         search_type="mmr",
         search_kwargs={"k": 5, "lambda_mult": 0.5}
     )
     
-    # Prompt template aprimorado, incluindo o histórico da conversa
-    prompt_template = (
-        "Contexto relevante:\n{context}\n\n"
-        "Instruções para resposta:\n"
-        "1. Responda APENAS com base no contexto fornecido.\n"
-        "2. Se a informação não estiver no contexto, diga 'Não tenho essa informação no meu conhecimento atual'.\n"
-        "3. Formate a resposta de maneira organizada, utilizando listas se necessário.\n"
-        "4. Limite a resposta a 3 frases ou menos.\n"
-        "5. Finalize com 'Obrigado por perguntar!'\n\n"
-        "Pergunta: {question}\n"
-        "Fala meu prezado(a), Resposta concisa e contextualizada:"
-    )
-    QA_CHAIN_PROMPT = PromptTemplate.from_template(prompt_template)
+    template = """Use os seguintes trechos de contexto para responder à pergunta no final. 
+Se não souber a resposta, diga que não sabe. Use no máximo 3 frases. 
+Formate a resposta de forma concisa. Finalize com "obrigado por perguntar meu preazado(a)!".
+{context}
+Pergunta: {question}
+Resposta útil:"""
     
-    # Cria a cadeia de QA utilizando o prompt customizado e o retriever base
+    QA_CHAIN_PROMPT = PromptTemplate.from_template(template)
+    
     qa_chain = ConversationalRetrievalChain.from_llm(
         llm,
         retriever=retriever,
